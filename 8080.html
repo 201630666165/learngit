@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>示例代码</title>
+</head>
+<body>
+	<div id="data" style="min-height: 300px"></div>
+	<div>
+		<input type="text" id="code">
+		<button onclick="login()">登陆</button>
+	</div>
+	<div>
+		<input type="text" id="barrage">
+		<button onclick="send()">发送</button>
+	</div>
+
+<!-- 引入jquery不是必要的，需要时引入 -->
+<script src="http://static.gotohope.cn/js/jquery.min.js"></script>
+
+<!-- 引入websocket处理代码 -->
+<script src="http://static.gotohope.cn/js/ws.js"></script>
+
+<script>
+ws = new WS("ws://gotohope.cn:5555"); // 创建websocket，仅需调用一次
+
+function login() // 用code登陆直接使用ws.login(code)
+{
+	// 说明：浏览器访问 http://gotohope.cn/barrage/getcode.php?id=1(或id=2) 可获取code
+	// 注意：相同id每次获取的code相同，但每次登陆前必须访问一次
+	ws.login($("#code").val());
+}
+
+function send() // 发送弹幕直接使用ws.send(barrage)，唯一参数为Object类型
+{
+	ws.send({
+		data:$("#barrage").val(),
+		color:"blue",
+		size:20,
+		dir:"right"
+	});
+}
+
+// 以下为回调接口
+
+function onbarrage(msg, name) // 必须，接收到消息时调用，msg是Object类型
+{
+	$("#data").append("<p>"+name+" : "+msg.data+"</p>");
+}
+
+function onopen() // 非必须，连接成功时调用
+{
+	$("#data").append("<p>连接成功</p>");
+}
+
+function onok(type) // 非必须，服务器返回成功响应时调用
+{
+	if(type === "login")
+	{
+		// 登陆成功
+		$("#data").append("<p>登陆成功</p>");
+	}
+}
+
+function onerror(type) // 非必须，发生错误时调用
+{
+	if(type === "login")
+	{
+		// 登陆失败时调用（code错误时）
+		$("#data").append("<p>识别码错误</p>");
+	}
+	else if(type === "needlogin")
+	{
+		// 发送弹幕失败，一般是由于未登录或登陆失败
+		$("#data").append("<p>请先登录</p>");
+	}
+	else if(type === "waiting")
+	{
+		// 等待连接：当前还未建立有效连接，需等待连接完成才能操作
+		$("#data").append("<p>请等待连接完成</p>");
+	}
+}
+
+function onclose() // 非必须，断开连接时调用
+{
+	// 可能是由于网络不稳定或服务器关闭，视情况重连或提醒用户
+	$("#data").append("<p>断开连接</p>");
+}
+
+</script>
+</body>
+</html>
